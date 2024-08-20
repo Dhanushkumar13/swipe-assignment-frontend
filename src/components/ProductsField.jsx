@@ -37,7 +37,6 @@ const ProductField = () => {
                 productPrice: '',
                 productQuantity: '',
             });
-            handleCalculate();
         }
     };
 
