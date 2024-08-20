@@ -27,6 +27,23 @@ const GenerateInvoice = () => {
 };
 
 const InvoiceModal = (props) => {
+  const itemsSubtotal = props.items.reduce(
+    (total, item) => total + item.itemPrice * item.itemQuantity,
+    0
+  );
+
+  const productsSubtotal = (props.products && props.products.length > 0)
+    ? props.products.reduce(
+        (total, product) => total + product.productPrice * product.productQuantity,
+        0
+      )
+    : 0;
+
+  const subTotal = itemsSubtotal + productsSubtotal;
+  const taxAmount = props.taxAmount;
+  const discountAmount = props.discountAmount;
+  const total = subTotal + taxAmount - discountAmount;
+
   return (
     <div>
       <Modal
@@ -52,7 +69,7 @@ const InvoiceModal = (props) => {
               <h6 className="fw-bold mt-1 mb-2">Amount&nbsp;Due:</h6>
               <h5 className="fw-bold text-secondary">
                 {" "}
-                {props.currency} {props.total}
+                {props.currency} {total}
               </h5>
             </div>
           </div>
@@ -75,7 +92,7 @@ const InvoiceModal = (props) => {
                 <div>{props.info.dateOfIssue || ""}</div>
               </Col>
             </Row>
-            <Table className="mb-0">
+            <Table className="mb-4">
               <thead>
                 <tr>
                   <th>QTY</th>
@@ -102,6 +119,15 @@ const InvoiceModal = (props) => {
                   );
                 })}
               </tbody>
+            </Table>
+
+            <Table className="mb-4">
+                <thead>
+                  <tr>
+                    <th>QTY</th>
+                    <th>DESCRIPTION</th>
+                  </tr>
+                </thead>
             </Table>
             <Table>
               <tbody>
@@ -136,7 +162,7 @@ const InvoiceModal = (props) => {
                     TOTAL
                   </td>
                   <td className="text-end" style={{ width: "100px" }}>
-                    {props.currency} {props.total}
+                    {props.currency} {subTotal}
                   </td>
                 </tr>
               </tbody>
@@ -185,3 +211,4 @@ const InvoiceModal = (props) => {
 };
 
 export default InvoiceModal;
+

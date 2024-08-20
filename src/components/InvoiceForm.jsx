@@ -9,11 +9,12 @@ import InvoiceItem from "./InvoiceItem";
 import InvoiceModal from "./InvoiceModal";
 import { BiArrowBack } from "react-icons/bi";
 import InputGroup from "react-bootstrap/InputGroup";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { addInvoice, updateInvoice } from "../redux/invoicesSlice";
 import { Link, useParams, useLocation, useNavigate } from "react-router-dom";
 import generateRandomId from "../utils/generateRandomId";
 import { useInvoiceListData } from "../redux/hooks";
+import ProductField from './ProductsField';
 
 const InvoiceForm = () => {
   const dispatch = useDispatch();
@@ -26,55 +27,54 @@ const InvoiceForm = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [copyId, setCopyId] = useState("");
   const { getOneInvoice, listSize } = useInvoiceListData();
+  const [products, setProducts] = useState([])
   const [formData, setFormData] = useState(
     isEdit
       ? getOneInvoice(params.id)
       : isCopy && params.id
       ? {
-          ...getOneInvoice(params.id),
-          id: generateRandomId(),
-          invoiceNumber: listSize + 1,
-        }
-      : {
-          id: generateRandomId(),
-          currentDate: new Date().toLocaleDateString(),
-          invoiceNumber: listSize + 1,
-          dateOfIssue: "",
-          billTo: "",
-          billToEmail: "",
-          billToAddress: "",
-          billFrom: "",
-          billFromEmail: "",
-          billFromAddress: "",
-          notes: "",
-          total: "0.00",
-          subTotal: "0.00",
-          taxRate: "",
-          taxAmount: "0.00",
-          discountRate: "",
-          discountAmount: "0.00",
-          currency: "$",
-          items: [
-            {
-              itemId: 0,
-              itemName: "",
-              itemDescription: "",
-              itemPrice: "1.00",
-              itemQuantity: 1,
-            },
-          ],
-        }
+        ...getOneInvoice(params.id),
+        id: generateRandomId(),
+        invoiceNumber: listSize + 1,
+        items: getOneInvoice(params.id).items || [],
+        products: getOneInvoice(params.id).products || []
+      }
+      :{
+        id: generateRandomId(),
+        currentDate: new Date().toLocaleDateString(),
+        invoiceNumber: listSize + 1,
+        dateOfIssue: "",
+        billTo: "",
+        billToEmail: "",
+        billToAddress: "",
+        billFrom: "",
+        billFromEmail: "",
+        billFromAddress: "",
+        notes: "",
+        total: "0.00",
+        subTotal: "0.00",
+        taxRate: "",
+        taxAmount: "0.00",
+        discountRate: "",
+        discountAmount: "0.00",
+        currency: "$",
+        items: [],
+        products: []
+      }
   );
-
+  
   useEffect(() => {
     handleCalculateTotal();
-  }, []);
+  }, [formData.items, formData.products]);
 
   const handleRowDel = (itemToDelete) => {
     const updatedItems = formData.items.filter(
       (item) => item.itemId !== itemToDelete.itemId
     );
-    setFormData({ ...formData, items: updatedItems });
+    const updatedProducts = formData.products.filter(
+      (product) => product.productId !== itemToDelete.productId
+    );
+    setFormData({ ...formData, items: updatedItems, products: updatedProducts });
     handleCalculateTotal();
   };
 
@@ -87,43 +87,62 @@ const InvoiceForm = () => {
       itemPrice: "1.00",
       itemQuantity: 1,
     };
+    const newProduct = {
+      productid: id,
+      productName: '',
+      productDescription: '',
+      productPrice: "1.00",
+      productQuantity: 1,
+    };
     setFormData({
       ...formData,
       items: [...formData.items, newItem],
+      products: [...formData.products, newProduct],
     });
     handleCalculateTotal();
   };
 
   const handleCalculateTotal = () => {
     setFormData((prevFormData) => {
+      const items = Array.isArray(prevFormData.items) ? prevFormData.items : [];
+      const products = Array.isArray(prevFormData.products) ? prevFormData.products : [];
       let subTotal = 0;
-
-      prevFormData.items.forEach((item) => {
-        subTotal +=
-          parseFloat(item.itemPrice).toFixed(2) * parseInt(item.itemQuantity);
+  
+      items.forEach((item) => {
+        const itemPrice = parseFloat(item.itemPrice) || 0;
+        const itemQuantity = parseInt(item.itemQuantity) || 0;
+        subTotal += itemPrice * itemQuantity;
       });
-
-      const taxAmount = parseFloat(
-        subTotal * (prevFormData.taxRate / 100)
-      ).toFixed(2);
-      const discountAmount = parseFloat(
-        subTotal * (prevFormData.discountRate / 100)
-      ).toFixed(2);
-      const total = (
-        subTotal -
-        parseFloat(discountAmount) +
-        parseFloat(taxAmount)
-      ).toFixed(2);
-
+  
+      products.forEach((product) => {
+        const productPrice = parseFloat(product.productPrice) || 0;
+        const productQuantity = parseInt(product.productQuantity) || 0;
+        subTotal += productPrice * productQuantity;
+      });
+  
+      const taxRate = parseFloat(prevFormData.taxRate) || 0;
+      const discountRate = parseFloat(prevFormData.discountRate) || 0;
+  
+      const taxAmount = (subTotal * (taxRate / 100)).toFixed(2);
+      const discountAmount = (subTotal * (discountRate / 100)).toFixed(2);
+      const total = (subTotal - parseFloat(discountAmount) + parseFloat(taxAmount)).toFixed(2);
+  
+      console.log('subTotal:', subTotal);
+      console.log('taxAmount:', taxAmount);
+      console.log('discountAmount:', discountAmount);
+      console.log('total:', total);
+  
       return {
         ...prevFormData,
-        subTotal: parseFloat(subTotal).toFixed(2),
+        subTotal: subTotal.toFixed(2),
         taxAmount,
         discountAmount,
         total,
       };
     });
   };
+  
+  
 
   const onItemizedItemEdit = (evt, id) => {
     const updatedItems = formData.items.map((oldItem) => {
@@ -136,6 +155,20 @@ const InvoiceForm = () => {
     setFormData({ ...formData, items: updatedItems });
     handleCalculateTotal();
   };
+
+  const onProductEdit = (evt, id) => {
+    const updatedProducts = formData.products.map((product) => {
+        if (product.productid === id) {
+            return { ...product, [evt.target.name]: evt.target.value };
+        }
+        return product;
+    });
+
+    setFormData({ ...formData, products: updatedProducts });
+    handleCalculateTotal();
+};
+
+  
 
   const editField = (name, value) => {
     setFormData({ ...formData, [name]: value });
@@ -303,6 +336,13 @@ const InvoiceForm = () => {
             </Row>
             <InvoiceItem
               onItemizedItemEdit={onItemizedItemEdit}
+              onRowAdd={handleAddEvent}
+              onRowDel={handleRowDel}
+              currency={formData.currency}
+              items={formData.items}
+            />
+            <ProductField 
+              onItemizedItemEdit={onProductEdit}
               onRowAdd={handleAddEvent}
               onRowDel={handleRowDel}
               currency={formData.currency}
