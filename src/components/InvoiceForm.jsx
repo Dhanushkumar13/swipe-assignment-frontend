@@ -78,7 +78,7 @@ const InvoiceForm = () => {
     handleCalculateTotal();
   };
 
-  const handleAddEvent = () => {
+  const handleAddItem = () => {
     const id = (+new Date() + Math.floor(Math.random() * 999999)).toString(36);
     const newItem = {
       itemId: id,
@@ -87,6 +87,15 @@ const InvoiceForm = () => {
       itemPrice: "1.00",
       itemQuantity: 1,
     };
+    setFormData({
+      ...formData,
+      items: [...formData.items, newItem],
+    });
+    handleCalculateTotal();
+  };
+
+  const handleAddProduct = () => {
+    const id = (+new Date() + Math.floor(Math.random() * 999999)).toString(36);
     const newProduct = {
       productid: id,
       productName: '',
@@ -96,7 +105,6 @@ const InvoiceForm = () => {
     };
     setFormData({
       ...formData,
-      items: [...formData.items, newItem],
       products: [...formData.products, newProduct],
     });
     handleCalculateTotal();
@@ -110,13 +118,13 @@ const InvoiceForm = () => {
   
       items.forEach((item) => {
         const itemPrice = parseFloat(item.itemPrice) || 0;
-        const itemQuantity = parseInt(item.itemQuantity) || 0;
+        const itemQuantity = parseInt(item.itemQuantity, 10) || 0;
         subTotal += itemPrice * itemQuantity;
       });
   
       products.forEach((product) => {
         const productPrice = parseFloat(product.productPrice) || 0;
-        const productQuantity = parseInt(product.productQuantity) || 0;
+        const productQuantity = parseInt(product.productQuantity, 10) || 0;
         subTotal += productPrice * productQuantity;
       });
   
@@ -127,11 +135,6 @@ const InvoiceForm = () => {
       const discountAmount = (subTotal * (discountRate / 100)).toFixed(2);
       const total = (subTotal - parseFloat(discountAmount) + parseFloat(taxAmount)).toFixed(2);
   
-      console.log('subTotal:', subTotal);
-      console.log('taxAmount:', taxAmount);
-      console.log('discountAmount:', discountAmount);
-      console.log('total:', total);
-  
       return {
         ...prevFormData,
         subTotal: subTotal.toFixed(2),
@@ -141,6 +144,7 @@ const InvoiceForm = () => {
       };
     });
   };
+  
   
   
 
@@ -336,14 +340,14 @@ const InvoiceForm = () => {
             </Row>
             <InvoiceItem
               onItemizedItemEdit={onItemizedItemEdit}
-              onRowAdd={handleAddEvent}
+              onRowAdd={handleAddItem}
               onRowDel={handleRowDel}
               currency={formData.currency}
               items={formData.items}
             />
             <ProductField 
               onItemizedItemEdit={onProductEdit}
-              onRowAdd={handleAddEvent}
+              onRowAdd={handleAddProduct}
               onRowDel={handleRowDel}
               currency={formData.currency}
               items={formData.items}

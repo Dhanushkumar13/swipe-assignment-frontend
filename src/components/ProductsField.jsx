@@ -129,7 +129,6 @@ const ProductField = () => {
                 </tbody>
             </Table>
             <div>
-                <h4>Add New Product</h4>
                 <input
                     type="text"
                     name="productName"
